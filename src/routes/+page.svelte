@@ -3,13 +3,15 @@
 
 	import { onMount } from 'svelte';
 	import { capitalizeEveryWord } from '$lib/helpers/helperFunctions';
-	import { cardDb } from '$lib/helpers/oramaCardDb';
+	import { createCardDb } from '$lib/helpers/oramaCardDb';
 	import { insertMultiple, search } from '@orama/orama';
 
 	let cardName = '';
 	let prompt = '';
 	let loading = false;
 	let loadingText = '';
+	// const cardDb = createCardDb();
+	// console.log('cardDb: ', cardDb);
 
 	let list = [];
 	$: console.log(list);
@@ -22,6 +24,8 @@
 	};
 
 	const insertCardsToOramaDb = async (cards) => {
+		const cardDb = await createCardDb();
+
 		await insertMultiple(cardDb, cards);
 	};
 
@@ -97,6 +101,8 @@
 		loadingText = ' fetching cards from the database';
 		const cards = await getCardsFromDb();
 		loadingText = 'Preparing cards for quick search';
+		console.log(cards.cardNames);
+		console.log(cards.cardNames.length);
 		await insertCardsToOramaDb(cards.cardNames);
 		console.log('cards inserted');
 		loading = false;
