@@ -10,8 +10,7 @@
 	let prompt = '';
 	let loading = false;
 	let loadingText = '';
-	// const cardDb = createCardDb();
-	// console.log('cardDb: ', cardDb);
+	let cardDb;
 
 	let list = [];
 	$: console.log(list);
@@ -24,7 +23,7 @@
 	};
 
 	const insertCardsToOramaDb = async (cards) => {
-		const cardDb = await createCardDb();
+		cardDb = await createCardDb();
 
 		await insertMultiple(cardDb, cards);
 	};
