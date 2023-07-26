@@ -33,6 +33,8 @@
 	},
 	"type": "module",
 	"dependencies": {
-		"mongoose": "^7.4.0"
+		"@orama/orama": "^1.1.0",
+		"mongoose": "^7.4.0",
+		"openai": "^3.3.0"
 	}
 }
