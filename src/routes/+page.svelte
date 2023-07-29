@@ -8,6 +8,7 @@
 
 	let cardName = '';
 	let prompt = '';
+	let userPrompt = '';
 	let loading = false;
 	let loadingText = '';
 	let cardDb;
@@ -35,16 +36,18 @@
 			properties: ['name'],
 			tolerance: 1
 		});
-		console.log(searchResult.hits);
-		console.log('searchresult: ', searchResult);
+
+		console.log('searchResults', searchResult);
 
 		const resultWithImage = searchResult.hits.find((result) => {
-			console.log(result.document.hasOwnProperty('image_uris'));
-
-			return result.document.hasOwnProperty('image_uris');
+			const testResult = result.document.hasOwnProperty('image_uris');
+			console.log(result);
+			// const { document } = result.document.hasOwnProperty('image_uris');
+			// prompt = `${prompt} ; ${document.name}: ${document.oracle_text}`;
+			return testResult;
 		});
 
-		console.log(resultWithImage);
+		console.log('result with image:', resultWithImage);
 
 		if (resultWithImage) {
 			list = [...list, resultWithImage.document];
@@ -124,7 +127,7 @@
 			/>
 		</form>
 		<form on:submit={sendPrompt}>
-			<input class="input" type="text" bind:value={prompt} placeholder="Enter question" />
+			<input class="input" type="text" bind:value={userPrompt} placeholder="Enter question" />
 		</form>
 	</div>
 	<div class="cardHolder">
