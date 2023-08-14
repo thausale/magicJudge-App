@@ -12,6 +12,7 @@
 	let loading = false;
 	let loadingText = '';
 	let cardDb;
+	let answer = '';
 
 	let list = [];
 	$: console.log(list);
@@ -50,6 +51,7 @@
 		console.log('result with image:', resultWithImage);
 
 		if (resultWithImage) {
+			console.log('result with image', resultWithImage.document);
 			list = [...list, resultWithImage.document];
 			cardName = '';
 		}
@@ -77,25 +79,38 @@
 	}
 
 	async function sendPrompt() {
-		let oracleText = '';
+		loading = true;
+		loadingText = 'sending prompt to judge ai';
+		try {
+			let oracleText = '';
 
-		list.forEach((card) => {
-			oracleText += card.name + ': ' + card.oracle_text;
-		});
+			list.forEach((card) => {
+				oracleText += card.name + ': ' + card.oracle_text;
+			});
 
-		console.log(oracleText);
+			console.log(oracleText);
 
-		const response = await fetch('/api/sendPrompt', {
-			method: 'POST',
-			body: JSON.stringify(prompt),
-			headers: {
-				'Content-Type': 'application/json'
-			}
-		});
+			const requestBody = {
+				prompt: prompt,
+				oracleText: oracleText
+			};
 
-		const test = await response.json();
+			const response = await fetch('/api/sendPrompt', {
+				method: 'POST',
+				body: JSON.stringify(requestBody),
+				headers: {
+					'Content-Type': 'application/json'
+				}
+			});
 
-		console.log(test);
+			const data = await response.json();
+			answer = data.message;
+			console.log(test);
+		} catch (error) {
+			console.log(error);
+		} finally {
+			loading = false;
+		}
 	}
 
 	onMount(async () => {
@@ -127,8 +142,9 @@
 			/>
 		</form>
 		<form on:submit={sendPrompt}>
-			<input class="input" type="text" bind:value={userPrompt} placeholder="Enter question" />
+			<input class="input" type="text" bind:value={prompt} placeholder="Enter question" />
 		</form>
+		<h2>{answer}</h2>
 	</div>
 	<div class="cardHolder">
 		{#each list as card, index}
@@ -167,5 +183,9 @@
 		display: grid;
 		grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
 		justify-items: center;
+	}
+
+	h2 {
+		margin: 0 10vw;
 	}
 </style>
