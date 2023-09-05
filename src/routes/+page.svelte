@@ -5,6 +5,7 @@
 	import { capitalizeEveryWord } from '$lib/helpers/helperFunctions';
 	import { createCardDb } from '$lib/helpers/oramaCardDb';
 	import { insertMultiple, search } from '@orama/orama';
+	import { ProgressRadial } from '@skeletonlabs/skeleton';
 
 	let cardName = '';
 	let prompt = '';
@@ -18,65 +19,96 @@
 	$: console.log(list);
 
 	const getCardsFromDb = async () => {
-		const response = await fetch('/api/getCardInfo');
-		const data = await response.json();
-		console.log(data);
-		return data;
+		try {
+			loading = true;
+			const response = await fetch('/api/getCardInfo');
+			const data = await response.json();
+			console.log(data);
+			return data;
+		} catch (error) {
+			console.error(error);
+			//res.status(500).json({ status: 'failed', message: error.message });
+		} finally {
+			loading = false;
+		}
 	};
 
 	const insertCardsToOramaDb = async (cards) => {
-		cardDb = await createCardDb();
+		try {
+			loading = true;
 
-		await insertMultiple(cardDb, cards);
+			cardDb = await createCardDb();
+
+			await insertMultiple(cardDb, cards);
+		} catch (error) {
+			console.error(error);
+			//res.status(500).json({ status: 'failed', message: error.message });
+		} finally {
+			loading = false;
+		}
 	};
 
 	const findCardByName = async () => {
-		console.log('searching card');
-		const searchResult = await search(cardDb, {
-			term: cardName,
-			properties: ['name'],
-			tolerance: 1
-		});
-
-		console.log('searchResults', searchResult);
-
-		const resultWithImage = searchResult.hits.find((result) => {
-			const testResult = result.document.hasOwnProperty('image_uris');
-			console.log(result);
-			// const { document } = result.document.hasOwnProperty('image_uris');
-			// prompt = `${prompt} ; ${document.name}: ${document.oracle_text}`;
-			return testResult;
-		});
-
-		console.log('result with image:', resultWithImage);
-
-		if (resultWithImage) {
-			console.log('result with image', resultWithImage.document);
-			list = [...list, resultWithImage.document];
-			cardName = '';
+		loadingText = '';
+		if (loading) {
+			loadingText = 'Something went wrong, please try again';
+			return;
 		}
-		console.log(list);
+		try {
+			loading = true;
+
+			console.log('searching card');
+			const searchResult = await search(cardDb, {
+				term: cardName,
+				properties: ['name'],
+				tolerance: 1
+			});
+
+			console.log('searchResults', searchResult);
+
+			const resultWithImage = searchResult.hits.find((result) => {
+				const testResult = result.document.hasOwnProperty('image_uris');
+				console.log(result);
+				// const { document } = result.document.hasOwnProperty('image_uris');
+				// prompt = `${prompt} ; ${document.name}: ${document.oracle_text}`;
+				return testResult;
+			});
+
+			console.log('result with image:', resultWithImage);
+
+			if (resultWithImage) {
+				console.log('result with image', resultWithImage.document);
+				list = [...list, resultWithImage.document];
+				cardName = '';
+			}
+			console.log(list);
+		} catch (error) {
+			console.error(error);
+			//res.status(500).json({ status: 'failed', message: error.message });
+		} finally {
+			loading = false;
+		}
 	};
 
-	function extractNumberFromEventCode(eventCode) {
-		const numberRegex = /\d+/;
-		const match = eventCode.match(numberRegex);
-		return match ? match[0] : null;
-	}
+	// function extractNumberFromEventCode(eventCode) {
+	// 	const numberRegex = /\d+/;
+	// 	const match = eventCode.match(numberRegex);
+	// 	return match ? match[0] : null;
+	// }
 
-	function handleKeyPress(e) {
-		// console.log(e);
-		const number = extractNumberFromEventCode(e.code);
-		// console.log(number);
-		if (!number) {
-			return;
-		} else {
-			if (number < list.length || number == list.length) {
-				list.splice(number - 1, 1);
-				list = list;
-			}
-		}
-	}
+	// function handleKeyPress(e) {
+	// 	// console.log(e);
+	// 	const number = extractNumberFromEventCode(e.code);
+	// 	// console.log(number);
+	// 	if (!number) {
+	// 		return;
+	// 	} else {
+	// 		if (number < list.length || number == list.length) {
+	// 			list.splice(number - 1, 1);
+	// 			list = list;
+	// 		}
+	// 	}
+	// }
 
 	async function sendPrompt() {
 		loading = true;
@@ -110,20 +142,27 @@
 			console.log(error);
 		} finally {
 			loading = false;
+			loadingText = '';
 		}
 	}
 
 	onMount(async () => {
 		loading = true;
 		loadingText = ' fetching cards from the database';
-		const cards = await getCardsFromDb();
-		loadingText = 'Preparing cards for quick search';
-		console.log(cards.cardNames);
-		console.log(cards.cardNames.length);
-		await insertCardsToOramaDb(cards.cardNames);
-		console.log('cards inserted');
-		loading = false;
-		loadingText = '';
+		try {
+			const cards = await getCardsFromDb();
+			loadingText = 'Preparing cards for quick search';
+			console.log(cards.cardNames);
+			console.log(cards.cardNames.length);
+			await insertCardsToOramaDb(cards.cardNames);
+			console.log('cards inserted');
+		} catch (error) {
+			console.error(error);
+			//res.status(500).json({ status: 'failed', message: error.message });
+		} finally {
+			loading = false;
+			loadingText = '';
+		}
 	});
 </script>
 
@@ -139,13 +178,27 @@
 				type="text"
 				bind:value={cardName}
 				placeholder="Enter cards here, submit after every card"
+				disabled={loading}
 			/>
 		</form>
 		<form on:submit={sendPrompt}>
-			<input class="input" type="text" bind:value={prompt} placeholder="Enter question" />
+			<input
+				class="input"
+				type="text"
+				bind:value={prompt}
+				placeholder="Enter question"
+				disabled={loading}
+			/>
+			{#if loading}
+				<button type="submit" class="btn variant-filled-surface">
+					<ProgressRadial width="w-10" />
+				</button>
+			{:else}
+				<button type="submit" class="btn variant-filled-surface"> Submit your question </button>
+			{/if}
 		</form>
-		<h2>{answer}</h2>
 	</div>
+	<h2>{answer}</h2>
 	<div class="cardHolder">
 		{#each list as card, index}
 			<!-- svelte-ignore a11y-click-events-have-key-events -->
@@ -174,7 +227,7 @@
 
 	.shell {
 		display: grid;
-		grid-template-rows: 150px 1fr;
+		grid-template-rows: min-content min-content 1fr;
 		align-items: center;
 		text-align: center;
 	}
